@@ -7,8 +7,6 @@ namespace Linked_List
         static void Main(string[] args)
         {
 
-
-
             Console.ReadLine();
         }
     }
