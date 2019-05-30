@@ -280,6 +280,20 @@ namespace Linked_List_Facts
         }
 
         [Fact]
+        public void Test_Exception_For_AddFirst_Argument_Already_Belongs_To_Another_List_First_Property()
+        {
+            //Given
+            var originalList = new LinkedList<string> { "1", "2" };
+            var node = originalList.First;
+            var listToAdd = new LinkedList<string>();
+            //When
+            var exception = Assert.Throws<InvalidOperationException>(() => listToAdd.AddFirst(node));
+            //Then
+            Assert.Equal("Node already belongs to another list!\n", exception.Message);
+            Assert.Empty(listToAdd);
+        }
+
+        [Fact]
         public void Test_FindLast_Method_For_Empty_List()
         {
             //When
@@ -326,11 +340,12 @@ namespace Linked_List_Facts
         {
             //Given
             var linkedList = new LinkedList<object>();
-            var obj = new Node<object>(null);
+            var obj = new Node<object>(default);
+            obj = null;
             //When
-            linkedList.AddFirst(obj);
+            var exception = Assert.Throws<ArgumentNullException>(() => linkedList.AddFirst(obj));
             //Then
-            Assert.Null(linkedList.FindLast(2));
+            Assert.Equal("node", exception.ParamName);
         }
 
         [Fact]
