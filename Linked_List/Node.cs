@@ -8,11 +8,13 @@ namespace Linked_List
             Data = data;
             Previous = null;
             Next = null;
+            List = null;
         }
 
         public T Data { get; set; }
         public Node<T> Previous { get; set; }
         public Node<T> Next { get; set; }
+        public LinkedList<T> List { get; set; }
 
         public void LinkTo(Node<T> prev = null, Node<T> next = null)
         {

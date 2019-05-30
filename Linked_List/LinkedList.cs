@@ -11,7 +11,10 @@ namespace Linked_List
         public LinkedList()
         {
             Count = 0;
-            sentinel = new Node<T>(default);
+            sentinel = new Node<T>(default)
+            {
+                List = this
+            };
             sentinel.LinkTo(sentinel, sentinel);
         }
 
@@ -36,114 +39,70 @@ namespace Linked_List
 
         public void AddFirst(Node<T> listNode)
         {
-            ThrowReadOnly();
-            ThrowNull(listNode);
-            ThrowInvalidOperation(listNode);
-
-            if (!IsListEmpty(listNode))
-            {
-                sentinel.Next.Previous = listNode;
-                listNode.Next = sentinel.Next;
-                sentinel.Next = listNode;
-            }
-            Count++;
+            AddBefore(sentinel.Next, listNode);
         }
 
         public void AddFirst(T value)
         {
-            var newNode = new Node<T>(value);
-            AddFirst(newNode);
+            AddBefore(sentinel.Next, new Node<T>(value));
         }
 
         public void AddLast(Node<T> listNode)
         {
-            ThrowReadOnly();
-            ThrowNull(listNode);
-            ThrowInvalidOperation(listNode);
-
-            if (!IsListEmpty(listNode))
-            {
-                listNode.LinkTo(prev: sentinel.Previous, next: sentinel);
-                sentinel.Previous.Next = listNode;
-                sentinel.Previous = listNode;
-            }
-            Count++;
+            AddBefore(sentinel, listNode);
         }
 
         public void Add(T item)
         {
-            var newNode = new Node<T>(item);
-            AddLast(newNode);
-        }
-
-        private void AddForEmptyList(Node<T> listNode)
-        {
-            if (Count == 0)
-                LinkToSentinel(listNode);
-        }
-
-        private void LinkToSentinel(Node<T> listNode)
-        {
-            sentinel.LinkTo(prev: listNode, next: listNode);
-            listNode.LinkTo(prev: sentinel, next: sentinel);
-        }
-
-        private bool IsListEmpty(Node<T> listNode)
-        {
-            AddForEmptyList(listNode);
-            return Count == 0;
+            AddBefore(sentinel, new Node<T>(item));
         }
 
         public void AddBefore(Node<T> listNode, Node<T> newListNode)
         {
             ExceptionsForAddingMethods(listNode, newListNode);
 
-            Node<T> markerNode = FindNode(listNode);
-            markerNode.Previous.Next = newListNode;
-            newListNode.LinkTo(prev: markerNode.Previous, next: markerNode);
-            markerNode.Previous = newListNode;
+            listNode.Previous.Next = newListNode;
+            newListNode.LinkTo(prev: listNode.Previous, next: listNode);
+            listNode.Previous = newListNode;
+            newListNode.List = this;
             Count++;
-        }
-
-        private bool CheckIfNodeIsInList(Node<T> listNode)
-        {
-            return FindNode(listNode) != null;
         }
 
         public void AddBefore(Node<T> listNode, T item)
         {
-            Node<T> newNode = new Node<T>(item);
-            AddBefore(listNode, newNode);
+            AddBefore(listNode, new Node<T>(item));
         }
 
         public void AddAfter(Node<T> listNode, Node<T> newListNode)
         {
-            ExceptionsForAddingMethods(listNode, newListNode);
-
-            Node<T> markerNode = FindNode(listNode);
-            markerNode.Next.Previous = newListNode;
-            newListNode.LinkTo(prev: markerNode, next: markerNode.Next);
-            markerNode.Next = newListNode;
-            Count++;
+            AddBefore(listNode.Next, newListNode);
         }
 
         public void AddAfter(Node<T> listNode, T item)
         {
             Node<T> newNode = new Node<T>(item);
-            AddAfter(listNode, newNode);
+            AddBefore(listNode.Next, newNode);
         }
 
         private void ExceptionsForAddingMethods(Node<T> listNode, Node<T> newListNode)
         {
             ThrowReadOnly();
             ThrowNull(listNode);
+            ThrowNodeIsNotInList(listNode);
             ThrowNull(newListNode);
             ThrowInvalidOperation(newListNode);
-            ThrowNodeIsNotInList(listNode);
+        }
+
+        private bool CheckIfNodeIsInList(Node<T> listNode)
+        {
+            return listNode.List == this;
         }
 
         private Node<T> FindNode(Node<T> listNode)
         {
+            if (listNode == sentinel)
+                return sentinel;
+
             foreach (var node in GetNodesFromStart())
             {
                 if (listNode == node)
@@ -206,48 +165,37 @@ namespace Linked_List
             ThrowReadOnly();
             ThrowNull(node);
             ThrowNodeIsNotInList(node);
-
-            Node<T> foundNode = FindNode(node);
-            RemoveItem(foundNode);
-            return foundNode != null;
+            return RemoveItem(FindNode(node));
         }
 
         public bool Remove(T item)
         {
-            return Find(item) != null && Remove(Find(item));
+            return RemoveItem(Find(item));
         }
 
-        private void RemoveItem(Node<T> foundNode)
+        private bool RemoveItem(Node<T> node)
         {
-            if (foundNode != null)
-            {
-                foundNode.Previous.Next = foundNode.Next;
-                foundNode.Next.Previous = foundNode.Previous;
-                foundNode.LinkTo();
-                Count--;
-            }
+            if (node == null)
+                return false;
+            node.Previous.Next = node.Next;
+            node.Next.Previous = node.Previous;
+            node.LinkTo();
+            Count--;
+            return true;
         }
 
         public void RemoveFirst()
         {
             ThrowReadOnly();
             ThrowListIsEmpty();
-
-            First.Next.Previous = sentinel;
-            sentinel.Next = First.Next;
-            First.LinkTo();
-            Count--;
+            RemoveItem(First);
         }
 
         public void RemoveLast()
         {
             ThrowReadOnly();
             ThrowListIsEmpty();
-
-            Last.Previous.Next = sentinel;
-            sentinel.Previous = Last.Previous;
-            Last.LinkTo();
-            Count--;
+            RemoveItem(Last);
         }
 
         public IEnumerator<T> GetEnumerator()
@@ -297,7 +245,7 @@ namespace Linked_List
 
         private void ThrowInvalidOperation(Node<T> node)
         {
-            if (node.Next != null || node.Previous != null)
+            if (!CheckIfNodeIsInList(node) && (node.Next != null || node.Previous != null))
                 throw new InvalidOperationException(message: "Node already belongs to another list!\n");
         }
 
